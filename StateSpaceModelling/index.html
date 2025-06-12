@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double Pendulum State Space Simulator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0a0a0a;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #ffffff;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 0 0 20px rgba(100, 200, 255, 0.5);
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #a0a0a0;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input[type="range"]:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.5);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.8);
+        }
+
+        .value-display {
+            display: inline-block;
+            color: #667eea;
+            font-weight: 600;
+            margin-left: 10px;
+            min-width: 50px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .canvas-container {
+            position: relative;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 600px;
+        }
+
+        .state-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            line-height: 1.6;
+        }
+
+        .state-info h3 {
+            margin-top: 0;
+            color: #667eea;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .trace-toggle {
+            display: flex;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .trace-toggle input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            canvas {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Double Pendulum State Space Dynamics</h1>
+    
+    <div class="container">
+        <div class="controls">
+            <h2 style="margin-top: 0; color: #667eea;">Parameters</h2>
+            
+            <div class="control-group">
+                <label>Mass 1 (kg): <span class="value-display" id="m1-value">1.0</span></label>
+                <input type="range" id="m1" min="0.1" max="5" step="0.1" value="1">
+            </div>
+            
+            <div class="control-group">
+                <label>Mass 2 (kg): <span class="value-display" id="m2-value">1.0</span></label>
+                <input type="range" id="m2" min="0.1" max="5" step="0.1" value="1">
+            </div>
+            
+            <div class="control-group">
+                <label>Length 1 (m): <span class="value-display" id="l1-value">1.0</span></label>
+                <input type="range" id="l1" min="0.5" max="2" step="0.1" value="1">
+            </div>
+            
+            <div class="control-group">
+                <label>Length 2 (m): <span class="value-display" id="l2-value">1.0</span></label>
+                <input type="range" id="l2" min="0.5" max="2" step="0.1" value="1">
+            </div>
+            
+            <div class="control-group">
+                <label>Initial Angle 1 (deg): <span class="value-display" id="theta1-value">90</span></label>
+                <input type="range" id="theta1" min="-180" max="180" step="5" value="90">
+            </div>
+            
+            <div class="control-group">
+                <label>Initial Angle 2 (deg): <span class="value-display" id="theta2-value">90</span></label>
+                <input type="range" id="theta2" min="-180" max="180" step="5" value="90">
+            </div>
+            
+            <div class="control-group">
+                <label>Gravity (m/s²): <span class="value-display" id="g-value">9.81</span></label>
+                <input type="range" id="g" min="0" max="20" step="0.1" value="9.81">
+            </div>
+            
+            <div class="control-group">
+                <label>Damping: <span class="value-display" id="damping-value">0.0</span></label>
+                <input type="range" id="damping" min="0" max="1" step="0.01" value="0">
+            </div>
+            
+            <div class="control-group">
+                <label>Simulation Speed: <span class="value-display" id="speed-value">0.5</span>x</label>
+                <input type="range" id="speed" min="0.1" max="2" step="0.1" value="0.5">
+            </div>
+            
+            <button id="reset">Reset Simulation</button>
+            <button id="pause">Pause / Resume</button>
+            
+            <div class="trace-toggle">
+                <label style="margin-bottom: 0;">Show Trace:</label>
+                <input type="checkbox" id="show-trace" checked>
+            </div>
+            
+            <div class="state-info">
+                <h3>State Vector</h3>
+                <div id="state-display">
+                    θ₁: <span id="state-theta1">0</span>°<br>
+                    θ₂: <span id="state-theta2">0</span>°<br>
+                    ω₁: <span id="state-omega1">0</span> rad/s<br>
+                    ω₂: <span id="state-omega2">0</span> rad/s
+                </div>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="pendulum-canvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('pendulum-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Resize canvas
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // State variables [theta1, theta2, omega1, omega2]
+        let state = [Math.PI/2, Math.PI/2, 0, 0];
+        let trace = [];
+        const maxTraceLength = 500;
+        
+        // Parameters
+        let params = {
+            m1: 1,
+            m2: 1,
+            l1: 1,
+            l2: 1,
+            g: 9.81,
+            damping: 0,
+            speed: 0.5
+        };
+        
+        let isPaused = false;
+        let showTrace = true;
+        
+        // State space equations
+        function stateDerivative(state, params) {
+            const [theta1, theta2, omega1, omega2] = state;
+            const {m1, m2, l1, l2, g, damping} = params;
+            
+            const s1 = Math.sin(theta1);
+            const s2 = Math.sin(theta2);
+            const c12 = Math.cos(theta1 - theta2);
+            const s12 = Math.sin(theta1 - theta2);
+            
+            const denom1 = l1 * (m1 + m2 * s12 * s12);
+            const denom2 = l2 * (m1 + m2 * s12 * s12);
+            
+            // Angular accelerations
+            const alpha1 = (-m2 * l1 * omega1 * omega1 * s12 * c12 
+                          + m2 * g * s2 * c12 
+                          + m2 * l2 * omega2 * omega2 * s12 
+                          - (m1 + m2) * g * s1
+                          - damping * omega1) / denom1;
+            
+            const alpha2 = (-m2 * l2 * omega2 * omega2 * s12 * c12
+                          + (m1 + m2) * g * s1 * c12
+                          - (m1 + m2) * l1 * omega1 * omega1 * s12
+                          - (m1 + m2) * g * s2
+                          - damping * omega2) / denom2;
+            
+            return [omega1, omega2, alpha1, alpha2];
+        }
+        
+        // Runge-Kutta 4th order integration
+        function rk4Step(state, params, dt) {
+            const k1 = stateDerivative(state, params);
+            const k2 = stateDerivative(state.map((s, i) => s + 0.5 * dt * k1[i]), params);
+            const k3 = stateDerivative(state.map((s, i) => s + 0.5 * dt * k2[i]), params);
+            const k4 = stateDerivative(state.map((s, i) => s + dt * k3[i]), params);
+            
+            return state.map((s, i) => s + dt * (k1[i] + 2*k2[i] + 2*k3[i] + k4[i]) / 6);
+        }
+        
+        // Update parameter values
+        function updateParams() {
+            params.m1 = parseFloat(document.getElementById('m1').value);
+            params.m2 = parseFloat(document.getElementById('m2').value);
+            params.l1 = parseFloat(document.getElementById('l1').value);
+            params.l2 = parseFloat(document.getElementById('l2').value);
+            params.g = parseFloat(document.getElementById('g').value);
+            params.damping = parseFloat(document.getElementById('damping').value);
+            params.speed = parseFloat(document.getElementById('speed').value);
+            
+            document.getElementById('m1-value').textContent = params.m1.toFixed(1);
+            document.getElementById('m2-value').textContent = params.m2.toFixed(1);
+            document.getElementById('l1-value').textContent = params.l1.toFixed(1);
+            document.getElementById('l2-value').textContent = params.l2.toFixed(1);
+            document.getElementById('g-value').textContent = params.g.toFixed(2);
+            document.getElementById('damping-value').textContent = params.damping.toFixed(2);
+            document.getElementById('speed-value').textContent = params.speed.toFixed(1);
+        }
+        
+        // Reset simulation
+        function reset() {
+            const theta1 = parseFloat(document.getElementById('theta1').value) * Math.PI / 180;
+            const theta2 = parseFloat(document.getElementById('theta2').value) * Math.PI / 180;
+            state = [theta1, theta2, 0, 0];
+            trace = [];
+            updateParams();
+        }
+        
+        // Draw pendulum
+        function draw() {
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+            const scale = Math.min(width, height) / 6;
+            const cx = width / 2;
+            const cy = height / 3;
+            
+            // Clear canvas
+            ctx.fillStyle = 'rgba(10, 10, 10, 0.1)';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Calculate positions
+            const x1 = cx + scale * params.l1 * Math.sin(state[0]);
+            const y1 = cy + scale * params.l1 * Math.cos(state[0]);
+            const x2 = x1 + scale * params.l2 * Math.sin(state[1]);
+            const y2 = y1 + scale * params.l2 * Math.cos(state[1]);
+            
+            // Add to trace
+            if (showTrace) {
+                trace.push({x: x2, y: y2});
+                if (trace.length > maxTraceLength) {
+                    trace.shift();
+                }
+                
+                // Draw trace
+                ctx.strokeStyle = 'rgba(102, 126, 234, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                trace.forEach((point, i) => {
+                    if (i === 0) {
+                        ctx.moveTo(point.x, point.y);
+                    } else {
+                        ctx.lineTo(point.x, point.y);
+                    }
+                });
+                ctx.stroke();
+            }
+            
+            // Draw pendulum arms
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            
+            // First arm
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(x1, y1);
+            ctx.stroke();
+            
+            // Second arm
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            
+            // Draw pivot
+            ctx.fillStyle = '#667eea';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Draw masses
+            const massScale = 15;
+            
+            // Mass 1
+            ctx.fillStyle = '#764ba2';
+            ctx.beginPath();
+            ctx.arc(x1, y1, massScale * Math.sqrt(params.m1), 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Mass 2
+            ctx.fillStyle = '#f093fb';
+            ctx.beginPath();
+            ctx.arc(x2, y2, massScale * Math.sqrt(params.m2), 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Update state display
+            document.getElementById('state-theta1').textContent = (state[0] * 180 / Math.PI).toFixed(1);
+            document.getElementById('state-theta2').textContent = (state[1] * 180 / Math.PI).toFixed(1);
+            document.getElementById('state-omega1').textContent = state[2].toFixed(2);
+            document.getElementById('state-omega2').textContent = state[3].toFixed(2);
+        }
+        
+        // Animation loop
+        function animate() {
+            if (!isPaused) {
+                // Update state using RK4
+                const dt = 0.01 * params.speed;
+                for (let i = 0; i < 5; i++) {
+                    state = rk4Step(state, params, dt);
+                }
+            }
+            
+            draw();
+            requestAnimationFrame(animate);
+        }
+        
+        // Event listeners
+        document.getElementById('reset').addEventListener('click', reset);
+        document.getElementById('pause').addEventListener('click', () => {
+            isPaused = !isPaused;
+        });
+        
+        document.getElementById('show-trace').addEventListener('change', (e) => {
+            showTrace = e.target.checked;
+            if (!showTrace) {
+                trace = [];
+            }
+        });
+        
+        // Add listeners for all sliders
+        ['m1', 'm2', 'l1', 'l2', 'g', 'damping', 'speed'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateParams);
+        });
+        
+        ['theta1', 'theta2'].forEach(id => {
+            document.getElementById(id).addEventListener('input', (e) => {
+                document.getElementById(id + '-value').textContent = e.target.value;
+            });
+        });
+        
+        // Initialize
+        reset();
+        animate();
+    </script>
+</body>
+</html>
