@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AP Art History Timeline</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .add-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 10px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .timeline-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, #667eea, #764ba2);
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin: 40px 0;
+            opacity: 0;
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .timeline-item:nth-child(odd) {
+            padding-right: 50%;
+            text-align: right;
+        }
+
+        .timeline-item:nth-child(even) {
+            padding-left: 50%;
+            text-align: left;
+        }
+
+        .timeline-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .timeline-content:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+
+        .timeline-item:nth-child(odd) .timeline-content::after {
+            content: '';
+            position: absolute;
+            right: -15px;
+            top: 20px;
+            width: 0;
+            height: 0;
+            border: 15px solid transparent;
+            border-left-color: white;
+        }
+
+        .timeline-item:nth-child(even) .timeline-content::after {
+            content: '';
+            position: absolute;
+            left: -15px;
+            top: 20px;
+            width: 0;
+            height: 0;
+            border: 15px solid transparent;
+            border-right-color: white;
+        }
+
+        .timeline-marker {
+            position: absolute;
+            left: 50%;
+            top: 25px;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: 4px solid white;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .artwork-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .artwork-artist {
+            font-size: 1.1rem;
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .artwork-year {
+            font-size: 1.2rem;
+            color: #764ba2;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .artwork-culture {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .artwork-description {
+            color: #666;
+            line-height: 1.6;
+            margin-top: 10px;
+        }
+
+        .delete-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: #ff3742;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .timeline::before {
+                left: 30px;
+            }
+
+            .timeline-item {
+                padding-left: 60px !important;
+                padding-right: 0 !important;
+                text-align: left !important;
+            }
+
+            .timeline-marker {
+                left: 30px !important;
+            }
+
+            .timeline-content::after {
+                display: none;
+            }
+
+            .add-form {
+                grid-template-columns: 1fr;
+            }
+
+            .filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 AP Art History Timeline</h1>
+            <p>Organize and explore masterpieces through time</p>
+        </div>
+
+        <div class="controls">
+            <div class="add-form">
+                <div class="form-group">
+                    <label for="title">Artwork Title</label>
+                    <input type="text" id="title" placeholder="Venus de Milo">
+                </div>
+                <div class="form-group">
+                    <label for="artist">Artist</label>
+                    <input type="text" id="artist" placeholder="Unknown">
+                </div>
+                <div class="form-group">
+                    <label for="year">Year/Period</label>
+                    <input type="text" id="year" placeholder="130-100 BCE">
+                </div>
+                <div class="form-group">
+                    <label for="culture">Culture/Movement</label>
+                    <input type="text" id="culture" placeholder="Ancient Greek">
+                </div>
+                <div class="form-group">
+                    <label for="description">Description/Significance</label>
+                    <textarea id="description" placeholder="Key details about the artwork's historical and artistic significance..."></textarea>
+                </div>
+                <div class="form-group">
+                    <button class="btn" onclick="addArtwork()">Add to Timeline</button>
+                </div>
+            </div>
+
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="filterCulture">Filter by Culture:</label>
+                    <select id="filterCulture" onchange="filterArtworks()">
+                        <option value="">All Cultures</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="searchBox">Search:</label>
+                    <input type="text" id="searchBox" placeholder="Search artworks..." oninput="filterArtworks()">
+                </div>
+                <div class="filter-group">
+                    <button class="btn" onclick="clearFilters()">Clear Filters</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="timeline-container">
+            <div class="timeline" id="timeline">
+                <div class="empty-state">
+                    <h3>🎨 Your Timeline Awaits</h3>
+                    <p>Add your first artwork to begin building your AP Art History timeline!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let artworks = [];
+        let filteredArtworks = [];
+
+        // Sample data to demonstrate the timeline
+        const sampleArtworks = [
+            {
+                title: "Jade Cong",
+                artist: "Unknown",
+                year: "4000 - 2100 BCE",
+                culture: "Liangzhu",
+                description: "a type of Chinese jade artifact characterized by a hollow, cylindrical tube with a square outer section"
+            },
+            {
+                title: "Tlatilco Female Figure",
+                artist: "Unknown",
+                year: "1200 - 900 BCE",
+                culture: "Tlatilco, Central Mexico",
+                description: "Ceramic figurine featuring exaggerated hips and a narrow waist, often interpreted as symbolizing fertility or duality."
+            },
+            {
+                title: "Beaker with Ibex Motifs",
+                artist: "Unknown",
+                year: "4200-3500 BCE",
+                culture: "Susa, Iran",
+                description: "Painted terra cotta vessel featuring stylized animal forms, including an ibex, with geometric patterns emphasizing form and symmetry."
+            },
+            {
+                title: "Camelid Sacrum in the Shape of a Canine",
+                artist: "Unknown",
+                year: "14000-7000 BCE",
+                culture: "Tequixquiac, Central Mexico",
+                description: "Carved from the sacrum of a camelid, this sculpture resembles a canine and is believed to hold spiritual or ritual significance."
+            },
+            {
+                title: "The Ambum Stone",
+                artist: "Unknown",
+                year: "1500 BCE",
+                culture: "Papua New Guinea (Enga Province)",
+                description: "A zoomorphic sculpture made of greywacke, possibly representing a fetal echidna, used for ceremonial purposes."
+            },
+            {
+                title: "Anthropomorphic Stele",
+                artist: "Unknown",
+                year: "4000-3000 BCE",
+                culture: "Arabian Peninsula",
+                description: "Carved sandstone stele with human-like features and a belted robe, possibly used as a grave marker or in ritual contexts."
+            },
+            {
+                title: "Apollo 11 Stones",
+                artist: "Unknown",
+                year: "25500-25300 BCE",
+                culture: "Namibia",
+                description: "Seven stone fragments with charcoal animal figures, among the earliest known examples of figurative art in Africa."
+            },
+            {
+                title: "Stonehenge",
+                artist: "Unknown",
+                year: "3000-1500 BCE",
+                culture: "Neolithic Europe",
+                description: "A monumental arrangement of megalithic stones in a circular layout, likely used for ceremonial or astronomical purposes."
+            },
+            {
+                title: "Terra Cotta Fragment",
+                artist: "Unknown",
+                year: "1000 BCE",
+                culture: "Lapita (Solomon Islands, Reef Islands)",
+                description: "A shard of terra cotta pottery with intricate stamped patterns, characteristic of the Lapita culture's ceramic tradition."
+            },
+            {
+                title: "Great Hall of the Bulls",
+                artist: "Unknown",
+                year: "17000-15000 BCE",
+                culture: "Lascaux, France",
+                description: "Cave paintings depicting bulls, horses, and deer in dynamic motion, demonstrating early human artistic expression and hunting rituals."
+            },
+            {
+                title: "Running Horned Woman",
+                artist: "Unknown",
+                year: "6000-4000 BCE",
+                culture: "Tassili n'Ajjer, Algeria",
+                description: "Rock painting of a decorated female figure in motion, possibly representing a goddess or participating in a ritual."
+            }
+        ];
+
+        // Load sample data on page load
+        window.onload = function() {
+            artworks = [...sampleArtworks];
+            filteredArtworks = [...artworks];
+            updateCultureFilter();
+            renderTimeline();
+        };
+
+        function addArtwork() {
+            const title = document.getElementById('title').value.trim();
+            const artist = document.getElementById('artist').value.trim();
+            const year = document.getElementById('year').value.trim();
+            const culture = document.getElementById('culture').value.trim();
+            const description = document.getElementById('description').value.trim();
+
+            if (!title || !artist || !year || !culture) {
+                alert('Please fill in all required fields (Title, Artist, Year, Culture)');
+                return;
+            }
+
+            const artwork = {
+                id: Date.now(),
+                title,
+                artist,
+                year,
+                culture,
+                description
+            };
+
+            artworks.push(artwork);
+            
+            // Clear form
+            document.getElementById('title').value = '';
+            document.getElementById('artist').value = '';
+            document.getElementById('year').value = '';
+            document.getElementById('culture').value = '';
+            document.getElementById('description').value = '';
+
+            updateCultureFilter();
+            filterArtworks();
+        }
+
+        function deleteArtwork(id) {
+            if (confirm('Are you sure you want to delete this artwork?')) {
+                artworks = artworks.filter(artwork => artwork.id !== id);
+                updateCultureFilter();
+                filterArtworks();
+            }
+        }
+
+        function updateCultureFilter() {
+            const cultures = [...new Set(artworks.map(artwork => artwork.culture))].sort();
+            const filterSelect = document.getElementById('filterCulture');
+            
+            // Preserve current selection
+            const currentValue = filterSelect.value;
+            
+            filterSelect.innerHTML = '<option value="">All Cultures</option>';
+            cultures.forEach(culture => {
+                const option = document.createElement('option');
+                option.value = culture;
+                option.textContent = culture;
+                filterSelect.appendChild(option);
+            });
+            
+            // Restore selection if it still exists
+            if (cultures.includes(currentValue)) {
+                filterSelect.value = currentValue;
+            }
+        }
+
+        function filterArtworks() {
+            const cultureFilter = document.getElementById('filterCulture').value;
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+
+            filteredArtworks = artworks.filter(artwork => {
+                const matchesCulture = !cultureFilter || artwork.culture === cultureFilter;
+                const matchesSearch = !searchTerm || 
+                    artwork.title.toLowerCase().includes(searchTerm) ||
+                    artwork.artist.toLowerCase().includes(searchTerm) ||
+                    artwork.culture.toLowerCase().includes(searchTerm) ||
+                    artwork.description.toLowerCase().includes(searchTerm);
+                
+                return matchesCulture && matchesSearch;
+            });
+
+            renderTimeline();
+        }
+
+        function clearFilters() {
+            document.getElementById('filterCulture').value = '';
+            document.getElementById('searchBox').value = '';
+            filteredArtworks = [...artworks];
+            renderTimeline();
+        }
+
+        function parseYear(yearString) {
+
+            const yearStr = yearString.toLowerCase().trim();
+    
+            // Handle BCE dates (convert to negative for proper sorting)
+            if (yearStr.includes('bce') || yearStr.includes('bc')) {
+                const match = yearStr.match(/(\d+)/);
+                return match ? -parseInt(match[0]) : 0;
+            }
+            
+            // Handle CE dates or regular dates
+            if (yearStr.includes('ce') || yearStr.includes('ad')) {
+                const match = yearStr.match(/(\d+)/);
+                return match ? parseInt(match[0]) : 0;
+            }
+            
+            // Handle ranges (take the earliest year)
+            const rangeMatch = yearStr.match(/(\d+)\s*[-–]\s*(\d+)/);
+            if (rangeMatch) {
+                const year1 = parseInt(rangeMatch[1]);
+                const year2 = parseInt(rangeMatch[2]);
+                const earlierYear = Math.min(year1, year2);
+                
+                // Check if it's BCE range
+                if (yearStr.includes('bce') || yearStr.includes('bc')) {
+                    return -Math.max(year1, year2); // For BCE, larger number is older
+                }
+                return earlierYear;
+            }
+            
+            // Handle single years
+            const match = yearStr.match(/(\d+)/);
+            return match ? parseInt(match[0]) : 0;
+
+        }
+
+        function renderTimeline() {
+            const timeline = document.getElementById('timeline');
+            
+            if (filteredArtworks.length === 0) {
+                timeline.innerHTML = `
+                    <div class="empty-state">
+                        <h3>🔍 No Artworks Found</h3>
+                        <p>Try adjusting your filters or add new artworks to your timeline.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort artworks by year
+            const sortedArtworks = [...filteredArtworks].sort((a, b) => {
+                return parseYear(a.year) - parseYear(b.year);
+            });
+
+            const timelineHTML = sortedArtworks.map((artwork, index) => `
+                <div class="timeline-item" style="animation-delay: ${index * 0.1}s">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="artwork-title">${artwork.title}</div>
+                        <div class="artwork-artist">by ${artwork.artist}</div>
+                        <div class="artwork-year">${artwork.year}</div>
+                        <div class="artwork-culture">${artwork.culture}</div>
+                        ${artwork.description ? `<div class="artwork-description">${artwork.description}</div>` : ''}
+                        <button class="delete-btn" onclick="deleteArtwork(${artwork.id})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+
+            timeline.innerHTML = timelineHTML;
+        }
+    </script>
+</body>
+</html>
