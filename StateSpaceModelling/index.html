@@ -242,6 +242,12 @@
                     ω₁: <span id="state-omega1">0</span> rad/s<br>
                     ω₂: <span id="state-omega2">0</span> rad/s
                 </div>
+                <h3 style="margin-top: 15px;">Energy</h3>
+                <div id="energy-display">
+                    Total: <span id="total-energy">0</span> J<br>
+                    Kinetic: <span id="kinetic-energy">0</span> J<br>
+                    Potential: <span id="potential-energy">0</span> J
+                </div>
             </div>
         </div>
         
@@ -283,31 +289,36 @@
         let isPaused = false;
         let showTrace = true;
         
-        // State space equations
+        // State space equations - correct double pendulum dynamics
         function stateDerivative(state, params) {
             const [theta1, theta2, omega1, omega2] = state;
             const {m1, m2, l1, l2, g, damping} = params;
             
-            const s1 = Math.sin(theta1);
-            const s2 = Math.sin(theta2);
+            // Precompute trigonometric values
             const c12 = Math.cos(theta1 - theta2);
             const s12 = Math.sin(theta1 - theta2);
             
-            const denom1 = l1 * (m1 + m2 * s12 * s12);
-            const denom2 = l2 * (m1 + m2 * s12 * s12);
+            // Mass matrix coefficients
+            const M11 = (m1 + m2) * l1 * l1;
+            const M12 = m2 * l1 * l2 * c12;
+            const M21 = M12;
+            const M22 = m2 * l2 * l2;
             
-            // Angular accelerations
-            const alpha1 = (-m2 * l1 * omega1 * omega1 * s12 * c12 
-                          + m2 * g * s2 * c12 
-                          + m2 * l2 * omega2 * omega2 * s12 
-                          - (m1 + m2) * g * s1
-                          - damping * omega1) / denom1;
+            // Determinant of mass matrix
+            const det = M11 * M22 - M12 * M21;
             
-            const alpha2 = (-m2 * l2 * omega2 * omega2 * s12 * c12
-                          + (m1 + m2) * g * s1 * c12
-                          - (m1 + m2) * l1 * omega1 * omega1 * s12
-                          - (m1 + m2) * g * s2
-                          - damping * omega2) / denom2;
+            // Force terms (including centrifugal and Coriolis forces)
+            const F1 = -m2 * l1 * l2 * omega2 * omega2 * s12 
+                      - (m1 + m2) * g * l1 * Math.sin(theta1)
+                      - damping * omega1;
+            
+            const F2 = m2 * l1 * l2 * omega1 * omega1 * s12 
+                      - m2 * g * l2 * Math.sin(theta2)
+                      - damping * omega2;
+            
+            // Solve for angular accelerations using inverse of mass matrix
+            const alpha1 = (M22 * F1 - M12 * F2) / det;
+            const alpha2 = (M11 * F2 - M21 * F1) / det;
             
             return [omega1, omega2, alpha1, alpha2];
         }
@@ -348,6 +359,37 @@
             state = [theta1, theta2, 0, 0];
             trace = [];
             updateParams();
+        }
+        
+        // Calculate system energy
+        function calculateEnergy(state, params) {
+            const [theta1, theta2, omega1, omega2] = state;
+            const {m1, m2, l1, l2, g} = params;
+            
+            // Positions
+            const x1 = l1 * Math.sin(theta1);
+            const y1 = -l1 * Math.cos(theta1);
+            const x2 = x1 + l2 * Math.sin(theta2);
+            const y2 = y1 - l2 * Math.cos(theta2);
+            
+            // Velocities
+            const vx1 = l1 * omega1 * Math.cos(theta1);
+            const vy1 = l1 * omega1 * Math.sin(theta1);
+            const vx2 = vx1 + l2 * omega2 * Math.cos(theta2);
+            const vy2 = vy1 + l2 * omega2 * Math.sin(theta2);
+            
+            // Kinetic energy
+            const T = 0.5 * m1 * (vx1 * vx1 + vy1 * vy1) + 
+                     0.5 * m2 * (vx2 * vx2 + vy2 * vy2);
+            
+            // Potential energy (reference at pivot)
+            const V = m1 * g * y1 + m2 * g * y2;
+            
+            return {
+                kinetic: T,
+                potential: V,
+                total: T + V
+            };
         }
         
         // Draw pendulum
@@ -432,6 +474,12 @@
             document.getElementById('state-theta2').textContent = (state[1] * 180 / Math.PI).toFixed(1);
             document.getElementById('state-omega1').textContent = state[2].toFixed(2);
             document.getElementById('state-omega2').textContent = state[3].toFixed(2);
+            
+            // Update energy display
+            const energy = calculateEnergy(state, params);
+            document.getElementById('total-energy').textContent = energy.total.toFixed(3);
+            document.getElementById('kinetic-energy').textContent = energy.kinetic.toFixed(3);
+            document.getElementById('potential-energy').textContent = energy.potential.toFixed(3);
         }
         
         // Animation loop
